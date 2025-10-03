@@ -1,17 +1,104 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="style.css">
-    <title>Login - Brian's Website</title>
+  <meta charset="utf-8" />
+  <title>Typing Speed Test — Fixed Timer</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; padding: 24px; max-width: 700px; margin:auto; }
+    h2 { margin-bottom: 8px; }
+    #text { font-size: 1.4rem; margin: 18px 0; line-height: 1.8rem; user-select: none; }
+    #input { width: 100%; font-size: 1.1rem; padding: 10px; box-sizing: border-box; }
+    .correct { color: #1b7a1b; }   /* green */
+    .wrong   { color: #b12b2b; text-decoration: underline wavy; } /* red */
+    #controls { margin-top: 12px; display:flex; gap:8px; align-items:center; }
+    button { padding: 8px 12px; border-radius:6px; border:1px solid #ccc; background:#f7f7f7; cursor:pointer; }
+    #result { margin-top: 16px; font-weight:600; }
+    small { color:#666; }
+  </style>
 </head>
 <body>
-    <div class="BMM BMM-card">
-        <h1>Login to Brian's website</h1>
-        <input type="text" class="BMM-input" placeholder="Username">
-        <input type="password" class="BMM-input" placeholder="Password">
-        <button class="BMM-button">Login</button>
-    </div>
+  <h2>Typing Speed Test</h2>
+  <div id="text" aria-live="polite"></div>
+  <input id="input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Start typing here..." />
+  <div id="controls">
+    <button id="restart">Restart</button>
+    <small>Tip: focus the input and start typing — timer starts on first keystroke.</small>
+  </div>
+  <div id="result" aria-live="polite"></div>
+
+  <script>
+    const textElement = document.getElementById('text');
+    const input = document.getElementById('input');
+    const result = document.getElementById('result');
+    const restartBtn = document.getElementById('restart');
+
+    // The sentence to type — change as needed
+    const sentence = "JavaScript makes typing tests fun!";
+    textElement.innerHTML = sentence.split('').map(ch => `<span>${ch}</span>`).join('');
+    const spans = textElement.querySelectorAll('span');
+
+    let startTime = null;
+    let finished = false;
+
+    // Helper: reset state
+    function reset() {
+      input.value = '';
+      spans.forEach(s => s.classList.remove('correct', 'wrong'));
+      startTime = null;
+      finished = false;
+      result.textContent = '';
+      input.disabled = false;
+      input.focus();
+    }
+
+    // Start fresh on load
+    reset();
+
+    input.addEventListener('input', () => {
+      const typed = input.value.split('');
+
+      // Start timer on first visible character typed
+      if (startTime === null && input.value.length > 0) {
+        startTime = Date.now();
+      }
+
+      // Update each span's class based on typed characters
+      spans.forEach((span, i) => {
+        const char = typed[i];
+        if (char == null) {
+          span.classList.remove('correct', 'wrong');
+        } else if (char === span.textContent) {
+          span.classList.add('correct');
+          span.classList.remove('wrong');
+        } else {
+          span.classList.add('wrong');
+          span.classList.remove('correct');
+        }
+      });
+
+      // Completion detection: every span must have class 'correct'
+      const allCorrect = Array.from(spans).every(s => s.classList.contains('correct', 'wrong') === false && s.classList.contains('correct'));
+
+      if (allCorrect && !finished && startTime !== null) {
+        finished = true;
+        const endTime = Date.now();
+        const timeTakenSec = (endTime - startTime) / 1000;
+        const correctChars = spans.length;               // all characters are correct at this point
+        const typedChars = input.value.length || 0;
+
+        // WPM: (correctChars / 5) words, per minute
+        const wpm = Math.round((correctChars / 5) * (60 / timeTakenSec));
+
+        // Accuracy: correctChars / typedChars (guard against division by zero)
+        const accuracy = typedChars === 0 ? 100 : Math.round((correctChars / typedChars) * 100);
+
+        result.innerHTML = `✅ Completed! Time: ${timeTakenSec.toFixed(1)}s<br>Speed: <strong>${wpm}</strong> WPM<br>Accuracy: <strong>${accuracy}%</strong>`;
+        input.disabled = true;
+      }
+    });
+
+    // Restart button
+    restartBtn.addEventListener('click', reset);
+  </script>
 </body>
 </html>
